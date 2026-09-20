@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AetherMark — A premium, local-first Markdown Editor and Reader. Fast, secure, and beautiful writing and reading interface.">
+  <title>AetherMark — Local Markdown Editor & Reader</title>
+  
+  <link rel="stylesheet" href="style.css">
+  <script src="vendor/marked.umd.js"></script>
+  <script src="vendor/purify.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- HEADER BAR -->
+    <header class="app-header">
+      <div class="header-left">
+        <button id="sidebar-toggle" class="icon-btn" title="Toggle Sidebar (Ctrl+\)">
+          <svg viewBox="0 0 24 24" width="20" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+        </button>
+        <div class="logo">
+          <span class="logo-symbol">Æ</span>
+          <span class="logo-text">AetherMark</span>
+        </div>
+        <div class="active-file-indicator">
+          <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+          <span id="current-filename">untitled.md</span>
+          <span id="save-status-dot" class="status-dot clean" title="All changes saved locally"></span>
+        </div>
+      </div>
+      
+      <!-- Layout Switchers -->
+      <div class="header-center">
+        <div class="layout-switch-group">
+          <button id="layout-edit" class="layout-btn" title="Editor Only">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+            <span>Edit</span>
+          </button>
+          <button id="layout-split" class="layout-btn active" title="Split View">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg>
+            <span>Split</span>
+          </button>
+          <button id="layout-preview" class="layout-btn" title="Reading View">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+            <span>Read</span>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Utility Actions -->
+      <div class="header-right">
+        <!-- Local Disk File Actions -->
+        <button id="file-new" class="header-action-btn" title="Create New Local File">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <span>New</span>
+        </button>
+        <button id="file-open" class="header-action-btn" title="Open File from Disk">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+          <span>Open</span>
+        </button>
+        <button id="file-save" class="header-action-btn" title="Save File to Disk">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+          <span>Save</span>
+        </button>
+
+        <div class="export-dropdown-wrapper">
+          <button id="export-trigger" class="header-action-btn accent-btn" title="Export options">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><polyline points="16 6 12 2 8 6"></polyline><line x1="12" y1="2" x2="12" y2="15"></line></svg>
+            <span>Export</span>
+          </button>
+          <div id="export-menu" class="export-menu hidden">
+            <button id="export-md" class="export-item">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+              <span>Raw Markdown (.md)</span>
+            </button>
+            <button id="export-html" class="export-item">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+              <span>HTML Document (.html)</span>
+            </button>
+            <button id="export-pdf" class="export-item">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+              <span>Print / Export PDF (.pdf)</span>
+            </button>
+          </div>
+        </div>
+
+        <button id="theme-toggle" class="icon-btn" title="Toggle Light/Dark Mode">
+          <svg id="theme-icon-sun" class="hidden" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>
+          <svg id="theme-icon-moon" viewBox="0 0 24 24" width="20" height="20" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        </button>
+      </div>
+    </header>
+    
+    <!-- CORE BODY -->
+    <div class="app-body">
+      
+      <!-- SIDEBAR (APP VAULT) -->
+      <aside id="app-sidebar" class="sidebar">
+        <div class="sidebar-header">
+          <h3>Local Notes</h3>
+          <button id="sidebar-add-note" class="icon-btn-small" title="Create New Note in Vault">
+            <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          </button>
+        </div>
+        
+        <label class="search-label" for="note-search">Search your notes</label>
+        <input id="note-search" type="search" placeholder="Search notes…" autocomplete="off">
+        <!-- Vault notes list -->
+        <div id="vault-list" class="notes-list">
+          <!-- Dynamic injected via JS -->
+        </div>
+        
+        <nav class="outline-section" aria-label="Document outline">
+          <h3>In this document</h3>
+          <div id="document-outline"></div>
+        </nav>
+        <!-- Drag & Drop Help Box -->
+        <div class="sidebar-footer">
+          <div class="backup-actions"><button id="backup-notes">Back up notes</button><button id="restore-notes">Restore</button></div>
+          <p class="storage-hint">Notes stay in this browser. Back them up before clearing browser data.</p>
+          <div class="drag-drop-zone" id="sidebar-dropzone">
+            <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+            <p>Drag & Drop local <span>.md</span> files here to read/edit instantly.</p>
+          </div>
+        </div>
+      </aside>
+      
+      <!-- SPLIT VIEW / EDITOR PANES -->
+      <main id="app-workspace" class="workspace split-mode">
+        
+        <!-- LEFT PANEL: EDITOR -->
+        <section id="pane-editor" class="pane">
+          <!-- Format Helper Toolbar -->
+          <div class="editor-toolbar">
+            <div class="toolbar-group">
+              <button class="tool-btn" data-format="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+              <button class="tool-btn" data-format="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+              <button class="tool-btn" data-format="strike" title="Strikethrough"><s>S</s></button>
+            </div>
+            <div class="divider"></div>
+            <div class="toolbar-group">
+              <button class="tool-btn" data-format="h1" title="Heading 1">H1</button>
+              <button class="tool-btn" data-format="h2" title="Heading 2">H2</button>
+              <button class="tool-btn" data-format="h3" title="Heading 3">H3</button>
+            </div>
+            <div class="divider"></div>
+            <div class="toolbar-group">
+              <button class="tool-btn" data-format="ul" title="Unordered List">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+              </button>
+              <button class="tool-btn" data-format="ol" title="Ordered List">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><line x1="10" y1="6" x2="21" y2="6"></line><line x1="10" y1="12" x2="21" y2="12"></line><line x1="10" y1="18" x2="21" y2="18"></line><path d="M4 6h1v4"></path><path d="M4 10h2"></path><path d="M6 14H4v2h2v2H4"></path></svg>
+              </button>
+              <button class="tool-btn" data-format="task" title="Checklist">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><polyline points="9 11 12 14 22 4"></polyline></svg>
+              </button>
+            </div>
+            <div class="divider"></div>
+            <div class="toolbar-group">
+              <button class="tool-btn" data-format="quote" title="Blockquote">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+              </button>
+              <button class="tool-btn" data-format="code" title="Code Block">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><polyline points="16 18 22 12 16 6"></polyline><polyline points="8 6 2 12 8 18"></polyline></svg>
+              </button>
+              <button class="tool-btn" data-format="link" title="Insert Link">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+              </button>
+              <button class="tool-btn" data-format="table" title="Insert Table">
+                <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="3" y1="9" x2="21" y2="9"></line><line x1="3" y1="15" x2="21" y2="15"></line><line x1="12" y1="3" x2="12" y2="21"></line></svg>
+              </button>
+            </div>
+            
+            <div style="flex-grow:1;"></div>
+            
+
+          </div>
+          
+          <!-- Editor Text Area Wrapper -->
+          <div class="editor-input-wrapper">
+            <textarea aria-label="Markdown editor" id="editor" class="editor-textarea" placeholder="Start typing in Markdown here..." spellcheck="true"></textarea>
+          </div>
+        </section>
+        
+        <!-- RIGHT PANEL: BEAUTIFUL RENDER PREVIEW -->
+        <section id="pane-preview" class="pane">
+          <div class="preview-header">
+            <span class="preview-title-label">Live Preview</span>
+            <div style="flex-grow:1;"></div>
+            <!-- Quick Clipboard Copy for Google Docs -->
+            <button id="copy-formatted" class="copy-rich-btn" title="Copy as Formatted Rich Text (Preserves formatting in Google Docs / Sheets)">
+              <svg viewBox="0 0 24 24" width="14" height="14" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy rich text</span>
+            </button>
+            <button id="copy-plain" class="plain-copy-btn" title="Copy raw Markdown code">
+              <svg viewBox="0 0 24 24" width="12" height="12" stroke="currentColor" stroke-width="2" fill="none"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span>Copy Markdown</span>
+            </button>
+          </div>
+          <div class="preview-scroll-container">
+            <div id="preview" class="markdown-body">
+              <!-- Rendered content goes here -->
+            </div>
+          </div>
+        </section>
+        
+      </main>
+    </div>
+    
+    <!-- FOOTER / STATUS BAR -->
+    <footer class="app-footer">
+      <div class="footer-left">
+        <span id="reading-mode-badge" class="footer-badge">Split View</span>
+        <span id="saved-badge" class="footer-badge success" role="status" aria-live="polite">Ready</span>
+      </div>
+      <div class="footer-right">
+        <span class="stat-item">Words: <strong id="stat-words">0</strong></span>
+        <span class="stat-item">Chars: <strong id="stat-chars">0</strong></span>
+        <span class="stat-item">Read Time: <strong id="stat-time">0 min</strong></span>
+      </div>
+    </footer>
+    
+  </div>
+  
+  <!-- File input element (hidden, triggered by button fallback) -->
+  <input type="file" id="file-input-fallback" accept=".md,.txt,.markdown" class="hidden">
+  
+  <input type="file" id="backup-input" accept=".json" class="hidden">
+  <div id="notification" role="status" aria-live="polite" class="notification hidden"></div>
+  <!-- Custom Modal Dialogs -->
+  <dialog id="save-vault-dialog" class="custom-dialog">
+    <form method="dialog" id="save-vault-form">
+      <h4>New local note</h4>
+      <p>Give your local note a title. This is saved directly in your browser's persistent storage.</p>
+      <input type="text" id="vault-note-name" placeholder="My New Note" required>
+      <div class="dialog-actions">
+        <button type="button" id="dialog-cancel" class="dialog-btn secondary">Cancel</button>
+        <button type="submit" id="dialog-confirm" class="dialog-btn primary">Create note</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- Application Logic -->
+  <script src="app.js" type="module"></script>
+</body>
+</html>

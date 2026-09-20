@@ -1,0 +1,13 @@
+{
+  "name": "aethermark",
+  "version": "1.0.0",
+  "private": true,
+  "description": "An offline local Markdown reader and editor",
+  "scripts": {
+    "vendor": "node scripts/vendor.cjs",
+    "test": "playwright test",
+    "test:server": "python3 -m unittest discover -s tests -v"
+  },
+  "dependencies": {"marked": "18.0.13", "dompurify": "3.4.15"},
+  "devDependencies": {"@playwright/test": "1.63.0"}
+}
