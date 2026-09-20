@@ -95,3 +95,8 @@ Tests cover server file grants, conflict detection, atomic file saves, host/orig
 ## Repository
 
 [Zagundo/aethermark](https://github.com/Zagundo/aethermark)
+
+## License
+
+AetherMark is open source under the [MIT License](LICENSE). Vendored components
+retain the licenses listed in [THIRD_PARTY.md](THIRD_PARTY.md).

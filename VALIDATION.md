@@ -1,26 +1,48 @@
-# Release validation — 2026-09-18
+# Release validation
 
-## Verified behavior
+Last verified: 2026-09-18
 
-- Python server suite: 7 tests passing. Real HTTP requests and temporary files cover explicit grants, unauthorized path/write rejection, Host/Origin checks, static asset restrictions, extension validation, disk-save roundtrips, and externally changed file conflicts.
-- Chromium suite: 9 tests passing. Covers offline rendering, HTML sanitization, table/heading rendering, immediate note switching, browser persistence, draft recovery, file import, HTML export, search, formatting, layouts, theme persistence, mobile sizing, backup/restore, native-save races, rich clipboard payloads, storage failure handling, and print/PDF generation.
-- Actual macOS Apple Event: opened a disposable Markdown file with the compiled `AetherMark.app`. The app launched Chrome, loaded that file, and an edit through the visible editor autosaved to the same physical file. Disk contents were independently read back.
-- The macOS bundle passes `codesign --verify --deep --strict`; its Info.plist passes `plutil -lint`.
-- Desktop (1440 × 1000) and mobile (390 × 844) screenshots were visually inspected. Mobile sidebar positioning and rich-copy accessibility in Read view were corrected.
-- JavaScript syntax check passes. npm install reports zero dependency vulnerabilities at build time.
+## Automated checks
 
-## Review coverage
+- **Server:** 7 tests covering explicit file grants, unauthorized read/write
+  rejection, Host and Origin checks, the static asset allowlist, file-type
+  validation, atomic saves, and external-change conflicts.
+- **Browser:** 9 Chromium tests covering offline rendering, sanitization,
+  Markdown features, note persistence, recovery drafts, imports, exports,
+  search, formatting, responsive layouts, themes, backup and restore, save
+  races, rich clipboard output, storage failures, and print/PDF output.
+- **Continuous integration:** the same server and browser suites run on every
+  push and pull request through GitHub Actions.
 
-Three read-only simplification lenses returned reuse, quality, and efficiency findings. Applied: clearer save-status branching, race-free temporary-file cleanup, and a single atomic backup-restore write. Kept synchronous browser draft persistence deliberately to avoid a note-switch/close data-loss window. Deferred broader performance restructuring; this release targets individual documents up to 8 MB, not large vaults. The efficiency worker returned its findings before reporting a usage-limit error; its final completion receipt was unavailable.
+## Manual checks
 
-Code review: skipped (ce-code-review unavailable) — the dedicated review stopped at scope resolution because this initial, uncommitted repository has no resolvable Git base. A manual source scan and the independent simplification findings supplemented the automated and live-browser checks; no completed dedicated code-review receipt is claimed.
+- A compiled `AetherMark.app` was opened through a real macOS Finder Apple
+  Event. An edit in the browser autosaved to the selected physical file and was
+  read back from disk.
+- The app bundle passed `codesign --verify --deep --strict`, and its
+  `Info.plist` passed `plutil -lint`.
+- Desktop at 1440 × 1000 and mobile at 390 × 844 were visually inspected.
+- The tracked repository and complete Git history were scanned for credentials,
+  private filesystem paths, browser notes, runtime tokens, and test documents.
 
-The manual scan covered file capabilities, CSRF/Origin/Host restrictions, sanitized render/export paths, storage failure handling, save snapshots, external conflicts, launcher port contention, Python/app portability, and repository secret/path exposure. No credentials, browser notes, runtime tokens, or test documents are included in the repository.
+## Known limits
 
-## Limits of verification
+- Browser file-picker handles are simulated in automated tests; real disk
+  integration is exercised through Finder.
+- Clipboard HTML and plain-text payloads are verified, but every destination
+  application and version is not tested.
+- Headless Chromium print CSS and generated PDF bytes are verified; the macOS
+  printer dialog is not automated.
+- Safari and Firefox are not separately tested.
+- The macOS app is ad-hoc signed and is not notarized.
 
-Native browser file-picker handles are simulated in the automated race test; the real disk integration is exercised through Finder. Clipboard HTML/plain payloads are verified, but pasting into every version of Google Docs, Sheets, or Word is not. Headless Chromium print CSS and generated PDF bytes are verified; no OS printer workflow is claimed. Safari and Firefox have not been separately tested. The app is ad-hoc signed and not notarized.
+## Operational signals
 
-## Local operation
-
-Use the save badge as the healthy signal: browser notes say “Saved in browser,” saved disk files say “Saved to disk,” and newer edits remain drafts. If a save fails or the file changes externally, export the current Markdown and reopen the original to compare. Back up Local Notes before clearing browser data or changing the app's server address. Runtime logs live in the per-user temporary `aethermark-*` directory and omit document contents and tokens.
+- Healthy browser notes show **Saved in browser**.
+- Healthy disk files show **Saved to disk**.
+- A failed or conflicting save keeps a recovery draft. Export the current
+  Markdown and reopen the original file to compare changes.
+- Back up Local Notes before clearing browser data or changing the app's server
+  address.
+- Runtime logs live in the per-user temporary `aethermark-*` directory and omit
+  document contents and tokens.

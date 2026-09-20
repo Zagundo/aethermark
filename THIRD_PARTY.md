@@ -7,4 +7,6 @@ Vendored browser dependencies are copied without modification from the exact npm
 
 Development-only browser testing uses [Playwright](https://playwright.dev/), 1.63.0, Apache-2.0.
 
-The interface and original feature set were developed from the reference files supplied by Simon Tracey. Their README and Obsidian note described earlier work with Antigravity. This repository contains the revised implementation; it does not assert a new license for the supplied application code.
+AetherMark's original application code is released under the MIT License in
+[`LICENSE`](LICENSE). The third-party components above retain their respective
+licenses.
