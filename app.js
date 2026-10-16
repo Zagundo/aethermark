@@ -49,6 +49,10 @@ Everything the app needs is bundled locally. Remote images are blocked to keep y
 
 const state = { notes: [], doc: null, layout: 'split', timer: null, token: null, storageOK: true };
 let toastTimer;
+let previewVersion = 0;
+let visualRenderQueue = Promise.resolve();
+let diagramId = 0;
+let configuredMermaidTheme;
 function notify(message, error = false) {
   $('notification').textContent = message;
   $('notification').className = 'notification' + (error ? ' error' : '');
@@ -192,7 +196,97 @@ function sanitizedMarkdown(content) {
     USE_PROFILES: { html: true }, FORBID_TAGS: ['style', 'form', 'button', 'textarea', 'select'], FORBID_ATTR: ['style', 'name', 'id']
   });
 }
+function mermaidTheme() {
+  return document.documentElement.dataset.theme === 'light' ? 'default' : 'dark';
+}
+function safeDiagramError(error) {
+  return String(error?.message || error || 'Unknown parser error').replace(/\s+/g, ' ').trim().slice(0, 500);
+}
+function diagramError(type, error) {
+  const box = document.createElement('div');
+  box.className = 'visual-error ' + type + '-error';
+  box.setAttribute('role', 'note');
+  const title = document.createElement('strong');
+  title.textContent = type === 'mermaid' ? 'Mermaid diagram could not be rendered' : 'Visual could not be rendered';
+  const details = document.createElement('span');
+  details.textContent = safeDiagramError(error);
+  box.append(title, details);
+  return box;
+}
+function sanitizedSvg(svg) {
+  const clean = DOMPurify.sanitize(svg, {
+    USE_PROFILES: { svg: true, svgFilters: true },
+    FORBID_TAGS: ['script', 'foreignObject', 'iframe', 'object', 'embed', 'image']
+  });
+  const template = document.createElement('template');
+  template.innerHTML = clean.trim();
+  const root = template.content.querySelector('svg');
+  if (!root) throw new Error('Mermaid returned no usable SVG.');
+  root.querySelectorAll('*').forEach(element => {
+    for (const attribute of [...element.attributes]) {
+      if (/^on/i.test(attribute.name) || /^\s*javascript:/i.test(attribute.value)) element.removeAttribute(attribute.name);
+    }
+  });
+  root.querySelectorAll('a').forEach(link => {
+    const href = link.getAttribute('href') || link.getAttribute('xlink:href');
+    if (href && !/^(https?:|mailto:|#)/i.test(href)) {
+      link.removeAttribute('href');
+      link.removeAttribute('xlink:href');
+      return;
+    }
+    if (href && !href.startsWith('#')) {
+      link.setAttribute('target', '_blank');
+      link.setAttribute('rel', 'noopener noreferrer');
+    }
+  });
+  root.setAttribute('role', 'img');
+  return root;
+}
+async function renderMermaid(source) {
+  if (!window.mermaid) throw new Error('Bundled Mermaid library is missing. Restore the vendor folder.');
+  const theme = mermaidTheme();
+  if (theme !== configuredMermaidTheme) {
+    mermaid.initialize({
+      startOnLoad: false,
+      securityLevel: 'strict',
+      suppressErrorRendering: true,
+      theme,
+      htmlLabels: false
+    });
+    configuredMermaidTheme = theme;
+  }
+  const { svg } = await mermaid.render('aethermark-mermaid-' + (++diagramId), source);
+  const figure = document.createElement('figure');
+  figure.className = 'visual-diagram mermaid-diagram';
+  figure.dataset.visualRenderer = 'mermaid';
+  figure.dataset.mermaidTheme = theme;
+  figure.setAttribute('aria-label', 'Mermaid diagram');
+  figure.append(sanitizedSvg(svg));
+  return figure;
+}
+const visualRenderers = [{
+  type: 'mermaid',
+  selector: 'pre > code.language-mermaid',
+  render: renderMermaid
+}];
+async function renderVisualBlocks(container, version) {
+  for (const renderer of visualRenderers) {
+    for (const code of [...container.querySelectorAll(renderer.selector)]) {
+      if (version !== previewVersion || !code.isConnected) return;
+      const block = code.parentElement;
+      try {
+        const rendered = await renderer.render(code.textContent);
+        if (version !== previewVersion || !block.isConnected) return;
+        block.replaceWith(rendered);
+      } catch (error) {
+        if (version !== previewVersion || !block.isConnected) return;
+        block.replaceWith(diagramError(renderer.type, error));
+      }
+    }
+  }
+}
 function renderPreview() {
+  const version = ++previewVersion;
   try {
     preview.innerHTML = sanitizedMarkdown(editor.value);
     preview.querySelectorAll('a').forEach(a => { a.target = '_blank'; a.rel = 'noopener noreferrer'; });
@@ -216,6 +310,9 @@ function renderPreview() {
       outline.append(button);
     });
     if (!outline.children.length) outline.textContent = 'Add a heading to find your way.';
+    visualRenderQueue = visualRenderQueue
+      .catch(() => {})
+      .then(() => renderVisualBlocks(preview, version));
   } catch (error) { preview.textContent = editor.value; errorMessage(error); }
   const words = editor.value.trim().split(/\s+/).filter(Boolean).length;
   $('stat-words').textContent = words.toLocaleString();
@@ -332,6 +429,7 @@ function applyTheme(theme) {
   $('theme-icon-sun').classList.toggle('hidden', theme !== 'dark');
   $('theme-icon-moon').classList.toggle('hidden', theme === 'dark');
   remember('ae_theme', theme);
+  if (state.doc) renderPreview();
 }
 function format(kind) {
   const start = editor.selectionStart, end = editor.selectionEnd;
@@ -343,25 +441,34 @@ function format(kind) {
   if (!document.execCommand('insertText', false, formats[kind])) editor.setRangeText(formats[kind], start, end, 'select');
   onEdit();
 }
-function richHTML() {
-  const container = document.createElement('div');
-  container.innerHTML = sanitizedMarkdown(editor.value);
+async function richHTML() {
+  await visualRenderQueue;
+  const container = preview.cloneNode(true);
+  container.removeAttribute('id');
   const styles = { h1: 'font-size:28px;font-weight:bold;margin:24px 0 12px', h2: 'font-size:22px;font-weight:bold;margin:20px 0 10px', h3: 'font-size:18px;font-weight:bold', p: 'margin:0 0 14px;line-height:1.6', table: 'border-collapse:collapse;width:100%;margin:16px 0', th: 'border:1px solid #ccc;padding:8px;background:#f1f5f9;text-align:left', td: 'border:1px solid #ccc;padding:8px', blockquote: 'border-left:3px solid #6366f1;padding-left:14px;color:#475569', code: 'font-family:monospace;background:#f1f5f9', pre: 'padding:16px;background:#f1f5f9;white-space:pre-wrap' };
   for (const [tag, style] of Object.entries(styles)) container.querySelectorAll(tag).forEach(el => el.setAttribute('style', style));
   container.querySelectorAll('img').forEach(img => { if (!img.src.startsWith('data:image/')) img.remove(); });
+  container.querySelectorAll('.visual-diagram').forEach(diagram => diagram.setAttribute('style', 'max-width:100%;overflow:hidden;margin:20px auto'));
+  container.querySelectorAll('.visual-diagram svg').forEach(svg => svg.setAttribute('style', 'display:block;max-width:100%;height:auto;margin:auto'));
   container.style.cssText = 'font-family:Georgia,serif;font-size:16px;line-height:1.6;color:#172033';
-  return container.outerHTML;
+  return DOMPurify.sanitize(container.outerHTML, {
+    USE_PROFILES: { html: true, svg: true, svgFilters: true },
+    FORBID_TAGS: ['script', 'form', 'button', 'textarea', 'select', 'foreignObject', 'iframe', 'object', 'embed', 'image'],
+    FORBID_ATTR: ['name']
+  });
 }
 async function copyRich() {
   try {
-    await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([richHTML()], { type: 'text/html' }), 'text/plain': new Blob([preview.innerText], { type: 'text/plain' }) })]);
+    const html = await richHTML();
+    await navigator.clipboard.write([new ClipboardItem({ 'text/html': new Blob([html], { type: 'text/html' }), 'text/plain': new Blob([preview.innerText], { type: 'text/plain' }) })]);
     notify('Rich text copied. Paste into your document.');
   } catch { notify('Clipboard access was unavailable. Export HTML or allow clipboard access in your browser.', true); }
 }
-function exportHTML() {
+async function exportHTML() {
   const title = state.doc.name.replace(/\.(md|markdown|txt)$/i, '');
   const safeTitle = document.createElement('span'); safeTitle.textContent = title;
-  download(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${safeTitle.innerHTML}</title><style>body{max-width:820px;margin:48px auto;padding:0 24px}img{max-width:100%}pre{overflow-wrap:anywhere}a{color:#4f46e5}@media print{body{margin:0}}</style>${richHTML()}</html>`, title + '.html', 'text/html');
+  const html = await richHTML();
+  download(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>${safeTitle.innerHTML}</title><style>body{max-width:820px;margin:48px auto;padding:0 24px}img,svg{max-width:100%;height:auto}pre{overflow-wrap:anywhere}a{color:#4f46e5}.visual-diagram{break-inside:avoid;page-break-inside:avoid}@media print{body{margin:0}}</style>${html}</html>`, title + '.html', 'text/html');
 }
 function bindEvents() {
   editor.addEventListener('input', onEdit);
@@ -382,7 +489,7 @@ function bindEvents() {
   $('export-trigger').onclick = e => { e.stopPropagation(); $('export-menu').classList.toggle('hidden'); };
   document.addEventListener('click', () => $('export-menu').classList.add('hidden'));
   $('export-md').onclick = () => download(editor.value, state.doc.name, 'text/markdown');
-  $('export-html').onclick = exportHTML;
+  $('export-html').onclick = () => exportHTML().catch(errorMessage);
   $('export-pdf').onclick = () => window.print();
   $('backup-notes').onclick = () => { try { download(JSON.stringify({ app: 'AetherMark', version: 1, notes: readNotes() }, null, 2), 'aethermark-notes.json', 'application/json'); } catch (error) { errorMessage(error); } };
   $('restore-notes').onclick = () => $('backup-input').click();

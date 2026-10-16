@@ -1,16 +1,18 @@
 # Release validation
 
-Last verified: 2026-09-18
+Last verified: 2026-10-16
 
 ## Automated checks
 
 - **Server:** 7 tests covering explicit file grants, unauthorized read/write
   rejection, Host and Origin checks, the static asset allowlist, file-type
   validation, atomic saves, and external-change conflicts.
-- **Browser:** 9 Chromium tests covering offline rendering, sanitization,
+- **Browser:** 12 Chromium tests covering offline rendering, sanitization,
   Markdown features, note persistence, recovery drafts, imports, exports,
   search, formatting, responsive layouts, themes, backup and restore, save
-  races, rich clipboard output, storage failures, and print/PDF output.
+  races, rich clipboard output, storage failures, print/PDF output, and Mermaid
+  rendering, source preservation, live updates, parser failures, security,
+  theming, rich copy, and standalone SVG export.
 - **Continuous integration:** the same server and browser suites run on every
   push and pull request through GitHub Actions.
 
@@ -33,6 +35,8 @@ Last verified: 2026-09-18
   application and version is not tested.
 - Headless Chromium print CSS and generated PDF bytes are verified; the macOS
   printer dialog is not automated.
+- Mermaid SVG output is verified in Chromium. Safari and Firefox Mermaid
+  rendering is not separately tested.
 - Safari and Firefox are not separately tested.
 - The macOS app is ad-hoc signed and is not notarized.
 

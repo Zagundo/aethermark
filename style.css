@@ -904,6 +904,41 @@ html[data-theme="light"] .markdown-body code {
   margin: 32px 0;
 }
 
+.visual-diagram {
+  width: 100%;
+  max-width: 100%;
+  margin: 20px auto 28px;
+  overflow-x: auto;
+  text-align: center;
+}
+
+.visual-diagram svg {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+.visual-error {
+  display: grid;
+  gap: 6px;
+  margin: 20px 0 24px;
+  padding: 14px 16px;
+  border: 1px solid #ef444466;
+  border-radius: var(--radius-md);
+  background: #ef444414;
+  color: var(--text-main);
+  font-family: var(--font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.visual-error span {
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
 /* ==========================================================================
    FOOTER / STATUS BAR
    ========================================================================== */
@@ -1122,6 +1157,20 @@ html[data-theme="light"] .markdown-body code {
     color: #0000ff !important;
     text-decoration: underline !important;
     border: none !important;
+  }
+
+  .visual-diagram {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .visual-diagram svg {
+    width: auto !important;
+    max-width: 100% !important;
+    height: auto !important;
   }
 }
 
