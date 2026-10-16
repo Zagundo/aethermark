@@ -4,5 +4,7 @@ for (const [source, target] of [
   ['marked/lib/marked.umd.js', 'marked.umd.js'],
   ['marked/LICENSE', 'marked.LICENSE'],
   ['dompurify/dist/purify.min.js', 'purify.min.js'],
-  ['dompurify/LICENSE', 'DOMPurify.LICENSE']
+  ['dompurify/LICENSE', 'DOMPurify.LICENSE'],
+  ['mermaid/dist/mermaid.min.js', 'mermaid.min.js'],
+  ['mermaid/LICENSE', 'Mermaid.LICENSE']
 ]) fs.copyFileSync(`node_modules/${source}`, `vendor/${target}`);

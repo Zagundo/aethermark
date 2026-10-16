@@ -38,11 +38,21 @@ The builder will not replace an existing app. Choose a new location with `--outp
 
 - **Edit / Split / Read** views, synchronized scrolling, light and dark themes.
 - Markdown headings, lists, checklists, blockquotes, tables, code, links, and inline images using data URLs.
+- Mermaid diagrams render as responsive SVG in Split and Read views while their fenced Markdown source remains editable and is saved unchanged.
 - Search local note titles and contents; jump through a document outline; rename or delete notes.
 - Formatting toolbar and native editor undo/redo.
 - **Copy rich text** puts sanitized HTML with inline styles and readable plain text on the clipboard. Paste support varies by destination; tables are included. **Copy Markdown** copies the source.
 - Export Markdown or standalone HTML; **Print / Export PDF** uses the browser print dialog.
 - Back up all browser notes to JSON and restore them as new copies, without replacing existing notes.
+
+Use a fenced `mermaid` block to add a diagram:
+
+````markdown
+```mermaid
+flowchart LR
+    Capture --> Connect --> Create
+```
+````
 
 ## Where your writing is saved
 
@@ -74,7 +84,7 @@ Browser storage can be cleared or exhausted. **Back up notes** regularly. On a s
 
 The server listens only on `127.0.0.1`. It checks Host/Origin, serves only the frontend asset allowlist, and requires a session token for writes. Finder files are registered by the launcher with a separate private token; arbitrary URL paths cannot read or write your disk. Saves use a temporary sibling and atomic replacement after checking a content revision.
 
-Markdown is sanitized by DOMPurify. Scripts, embedded frames, and remote images are blocked. Relative disk images and Obsidian-specific plugins, wikilinks, and transclusions are not supported. Clicking an external link opens your browser normally. Files must be UTF-8 and no larger than 8 MB.
+Markdown is sanitized by DOMPurify. Mermaid runs locally with its strict security setting, and its generated SVG is sanitised again before it enters the preview. Scripts, embedded frames, SVG images, and remote images are blocked. Relative disk images and Obsidian-specific plugins, wikilinks, and transclusions are not supported. Clicking an external link opens your browser normally. Files must be UTF-8 and no larger than 8 MB.
 
 There is no cloud sync. This app is intended for a trusted local machine, not hosting on a network or the public internet.
 
@@ -88,9 +98,9 @@ npm run test:server
 npm test
 ```
 
-The shipped `vendor/` contains pinned Marked and DOMPurify browser builds plus their licenses; no npm installation is required by end users. `npm run vendor` refreshes them from the lockfile-installed packages. See [THIRD_PARTY.md](THIRD_PARTY.md).
+The shipped `vendor/` contains pinned Marked, DOMPurify, and Mermaid browser builds plus their licenses; no npm installation is required by end users. `npm run vendor` refreshes them from the lockfile-installed packages. See [THIRD_PARTY.md](THIRD_PARTY.md).
 
-Tests cover server file grants, conflict detection, atomic file saves, host/origin restrictions, asset exposure, note persistence, immediate switching, recovery, sanitization, exports, clipboard payloads, layout, storage failures, and native-save races. Browser file-picker handles are simulated in automated tests; the Finder path is additionally exercised against a real local file during release verification.
+Tests cover server file grants, conflict detection, atomic file saves, host/origin restrictions, asset exposure, note persistence, immediate switching, recovery, sanitization, exports, clipboard payloads, layout, storage failures, native-save races, and Mermaid rendering, errors, themes, security, copy, export, and print behaviour. Browser file-picker handles are simulated in automated tests; the Finder path is additionally exercised against a real local file during release verification.
 
 ## Repository
 

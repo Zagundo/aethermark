@@ -8,6 +8,12 @@
     "test": "playwright test",
     "test:server": "python3 -m unittest discover -s tests -v"
   },
-  "dependencies": {"marked": "18.0.13", "dompurify": "3.4.15"},
-  "devDependencies": {"@playwright/test": "1.63.0"}
+  "dependencies": {
+    "dompurify": "3.4.17",
+    "marked": "18.0.13",
+    "mermaid": "12.2.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
 }

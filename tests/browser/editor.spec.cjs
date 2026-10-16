@@ -147,3 +147,104 @@ test('print mode exposes the document even from edit-only mode', async ({ page }
   expect(pdf.subarray(0, 4).toString()).toBe('%PDF');
   expect(pdf.length).toBeGreaterThan(1000);
 });
+
+test('Mermaid renders offline in Read and Split while preserving editable source', async ({ page }) => {
+  const source = [
+    '# Visual workflow',
+    '',
+    '```mermaid',
+    'flowchart LR',
+    '    Capture --> Connect',
+    '```',
+    '',
+    'After the diagram.'
+  ].join('\n');
+
+  await page.locator('#editor').fill(source);
+  await expect(page.locator('#preview .mermaid-diagram svg')).toHaveCount(1);
+  await expect(page.locator('#preview .mermaid-diagram')).toContainText('Capture');
+  await expect(page.locator('#editor')).toHaveValue(source);
+
+  await page.locator('#layout-edit').click();
+  await expect(page.locator('#pane-preview')).toBeHidden();
+  await expect(page.locator('#editor')).toHaveValue(source);
+  await page.locator('#layout-preview').click();
+  await expect(page.locator('#preview .mermaid-diagram svg')).toBeVisible();
+  await page.locator('#layout-split').click();
+  await expect(page.locator('#editor')).toBeVisible();
+  await expect(page.locator('#preview .mermaid-diagram svg')).toBeVisible();
+
+  const updated = source.replace('Connect', 'Create');
+  await page.locator('#editor').fill(updated);
+  await expect(page.locator('#preview .mermaid-diagram')).toContainText('Create');
+  await expect(page.locator('#editor')).toHaveValue(updated);
+  await page.reload();
+  await expect(page.locator('#editor')).toHaveValue(updated);
+});
+
+test('Mermaid supports representative diagrams and isolates invalid or unsafe input', async ({ page }) => {
+  const diagrams = [
+    'sequenceDiagram\n    Alice->>Bob: Hello',
+    'stateDiagram-v2\n    [*] --> Ready',
+    'classDiagram\n    class Document',
+    'mindmap\n  root((AetherMark))\n    Offline',
+    'timeline\n    title Release\n    2026 : Mermaid',
+    'flowchart LR\n    Safe --> Rendered'
+  ];
+  const source = diagrams.map(diagram => `\`\`\`mermaid\n${diagram}\n\`\`\``).join('\n\n');
+  await page.locator('#editor').fill(source);
+  await expect(page.locator('#preview .mermaid-diagram svg')).toHaveCount(diagrams.length);
+
+  await page.locator('#editor').fill([
+    '```mermaid',
+    'flowchart TD',
+    '    Broken[',
+    '```',
+    '',
+    'The rest still renders.',
+    '',
+    '```mermaid',
+    'flowchart LR',
+    '    A["<script>window.pwned=1</script>"] --> B',
+    '    click A "javascript:window.pwned=1"',
+    '```'
+  ].join('\n'));
+  await expect(page.locator('#preview .mermaid-error')).toContainText('Mermaid diagram could not be rendered');
+  await expect(page.locator('#preview')).toContainText('The rest still renders.');
+  await expect(page.locator('#preview .mermaid-diagram svg')).toHaveCount(1);
+  expect(await page.evaluate(() => window.pwned)).toBeUndefined();
+  const rendered = await page.locator('#preview').innerHTML();
+  expect(rendered).not.toMatch(/<script|onerror=|javascript:/i);
+});
+
+test('Mermaid follows theme and survives rich copy, standalone export, and print', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await page.locator('#editor').fill('```mermaid\nflowchart LR\n    Light --> Dark\n```');
+  const diagram = page.locator('#preview .mermaid-diagram');
+  await expect(diagram.locator('svg')).toBeVisible();
+  await expect(diagram).toHaveAttribute('data-mermaid-theme', 'dark');
+  await page.locator('#theme-toggle').click();
+  await expect(diagram).toHaveAttribute('data-mermaid-theme', 'default');
+  await expect(diagram.locator('svg')).toBeVisible();
+
+  await page.locator('#copy-formatted').click();
+  await expect(page.locator('#notification')).toContainText('Rich text copied');
+  const clipboardHTML = await page.evaluate(async () => {
+    const [item] = await navigator.clipboard.read();
+    return (await item.getType('text/html')).text();
+  });
+  expect(clipboardHTML).toContain('<svg');
+
+  const downloaded = page.waitForEvent('download');
+  await page.locator('#export-trigger').click();
+  await page.locator('#export-html').click();
+  const html = await fs.readFile(await (await downloaded).path(), 'utf8');
+  expect(html).toContain('<svg');
+  expect(html).not.toContain('mermaid.min.js');
+
+  await page.emulateMedia({ media: 'print' });
+  const sizes = await diagram.evaluate(element => ({ width: element.scrollWidth, available: element.clientWidth }));
+  expect(sizes.width).toBeLessThanOrEqual(sizes.available);
+  const pdf = await page.pdf({ format: 'A4' });
+  expect(pdf.subarray(0, 4).toString()).toBe('%PDF');
+});

@@ -74,6 +74,7 @@ class ServerTests(unittest.TestCase):
         for path in ['/server.py', '/.git/config', '/README.md', '/vendor/../server.py', '/']:
             status, _ = self.request('GET', path)
             self.assertEqual(status, 200 if path == '/' else 404, path)
+        self.assertEqual(self.request('GET', '/vendor/mermaid.min.js')[0], 200)
         self.assertEqual(self.request('GET', '/', headers={'Host': 'evil.example'})[0], 403)
 
     def test_failed_replacement_preserves_original_and_cleans_temporary_file(self):

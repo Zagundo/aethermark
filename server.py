@@ -14,7 +14,10 @@ from urllib.parse import parse_qs, urlsplit
 ROOT = Path(__file__).resolve().parent
 MAX_BYTES = 8 * 1024 * 1024
 EXTENSIONS = {'.md', '.markdown', '.txt'}
-ASSETS = {'index.html', 'app.js', 'style.css', 'vendor/marked.umd.js', 'vendor/purify.min.js'}
+ASSETS = {
+    'index.html', 'app.js', 'style.css',
+    'vendor/marked.umd.js', 'vendor/purify.min.js', 'vendor/mermaid.min.js'
+}
 
 
 def revision(data):
